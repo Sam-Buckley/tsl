@@ -1,0 +1,19 @@
+:double
+    mul 2
+    goto *v
+:ind
+    in t
+    goto *double
+    :v
+    out @r
+    sub num 1
+    set num @r
+    goto *@l
+:main
+    set num 3
+    label *loop
+    :loop
+    gt num 0
+    goto_if *ind
+    out "loop over"
+    exit
