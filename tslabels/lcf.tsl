@@ -1,0 +1,21 @@
+:lowest_factor
+    cmp @r 1
+    goto_if *one
+    set subject @r
+    set start 2
+    :factor_loop
+        mod subject start
+        cmp 0
+        goto_if *factor_found
+        push start
+        add 1
+        mut start @r
+        goto *factor_loop
+    :factor_found
+        push start
+        pop subject
+        pop start
+        goto *@l
+    :one
+        push 1
+        goto *@l

@@ -1,0 +1,30 @@
+:power
+    r 2 #value for power
+    set pow @r
+    r 3 #value for subject
+    set start @r
+    set sub @r
+    set count 1
+    :loop_power
+        add count 1
+        mut count @r
+        gt count 10
+        goto_if *end_power
+        mul sub start
+        mut sub @r
+        goto *loop_power
+    :end_power
+    push sub
+    drop start
+    drop sub
+    drop pow
+    drop count
+    goto *@l
+:main
+    push 2
+    set subject @r
+    rand 1 100
+    set power_by @r
+    call power
+    out subject " ^ " power_by " = " @r
+    

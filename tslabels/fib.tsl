@@ -1,0 +1,45 @@
+:fib 
+    set target @r 'target = last pushed value'
+    cmp 1 target 'if target == 1, goto fib_zero'
+    goto_if *fib_zero 
+    push target
+    cmp 4
+    goto_if *fib_four
+    push target 'push target to stack'
+    gt 4 target 'if target < 4, goto fib_one'
+    goto_if *fib_one
+    set index 0 'index = 0, index of fib'
+    set idx1 0 'idx1 = 0, previous value of fib'
+    set idx2 1 'idx2 = 1, current value of fib'
+    :fib_loop 'loop until index == target'
+        add 1 index 'index++'
+        mut index @r 
+        cmp index target 'if index == target, goto fib_d'
+        goto_if *fib_d
+        add idx1 idx2 'idx1 = idx2, idx2 = idx1 + idx2'
+        mut idx1 idx2
+        mut idx2 @r
+        goto *fib_loop
+    :fib_d 
+        'drop all values from stack and return'
+        push idx2 'push idx2 to stack'
+        drop target
+        drop index
+        drop idx1
+        drop idx2
+        goto *@l
+    :fib_zero
+        'for if the target is 1'
+        drop target 'drop target'
+        push 0 'push 0 to stack'
+        goto *@l
+    :fib_one
+        'for if the target is 2 or 3'
+        drop target 'drop target'
+        push 1 'push 1 to stack'
+        goto *@l 
+    :fib_four
+        'for if the target is 4'
+        drop target 'drop target'
+        push 3 'push 3 to stack'
+        goto *@l
