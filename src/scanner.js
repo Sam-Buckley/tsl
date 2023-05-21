@@ -20,27 +20,6 @@ function scanProgram(program) {
     for (i in program) {
         l += 1;
         line = program[i].trim();
-        //if the line defines a variable, through set or in
-        if (line.trim().startsWith("set") || line.trim().startsWith("in")) {
-            //get the variable name
-            var variableName = line.split(" ")[1];
-            value = line.split(" ")[2];
-            if (variableName == undefined) {
-                continue
-            }
-            if (variableName == "_") {
-                continue
-            }
-            //if the variable is already in the variables list, throw an error
-            if (variableName in variables) {
-                error("Variable " + variableName + " is defined twice", "NameError", i, program[i], variableName, hint = `Variable is already defined on line ${variables[variableName]["line"]}`, hint_quote = `set ${variableName} ${variables[variableName]["value"]}`);
-                error_throw = true;
-                error_count += 1;
-                errors.push(`DoubleDef: ${variableName}`)
-            }
-            //add the variable to the variables list
-            variables[variableName] = {line: l, value: value};
-        }
         //if the line is a label, add it to the labels dictionary
         if (line.trim().startsWith(":")) {
             //get the label name

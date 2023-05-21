@@ -2,6 +2,7 @@ const prompt = require('prompt-sync')();
 const error = require("./error.js").error;
 //create a return stack to store the return addresses
 var returnStack = [];
+async_lines = []
 //create a stack to store the values
 //create a dictionary to store the variables
 var stack = Object.create(null)
@@ -13,14 +14,15 @@ var functions = Object.create(null);
 var specialForms = Object.create(null);
 //create a dictionary to store the labels
 var labels = Object.create(null);
+var program = []
 let currentLine = 0;
+let thread = 0;
 function kill() {
     process.exit();
 }
 const goStack = []
 const Token = require("./token.js").Token;
 //function to parse an expression usibf the shunting yard algorithm
-
 //function to parse a line of code into a list of tokens
 //for each line, the first token is the command, and the rest are arguments
 //check the entire line for mathemtical expressions and parse them using the shunting yard algorithm and the parseExpression function
@@ -106,29 +108,50 @@ function scan(program) {
 //6. unclosed quotes
 
 
-//function to evaluate a program that scans the program for labels and then evaluates each line starting from the main label
-function evaluate(program) {
-    if(require("./scanner.js")(program)) {
+//function to evaluate the program, it can possibly be made async in the middle of the program
+//if the program becomes async, the async_lines will be iterated through and evaluated until the length is 1 (main program)
+//the program runs in a while loop, and the current line is evaluated
+//it starts at the line denoted by labels["main"]
+//constantly check if the length of async_lines is greater than 1, if it is, "zip" through the async_lines and evaluate them
+//if the length of async_lines is 1, continue evaluating the main program
+function evaluate(prg) {
+    if(require("./scanner.js")(prg)) {
         return
     };
-    scan(program);
+    scan(prg);
     //split the program into lines
-    program = program.split("\n");
+    program = prg.split("\n");
     currentLine = labels["main"];
-    //while loop until an exit an exit command is reached
+    //async_lines stores all current lines, even if there is 1 thread
+    //push the main label to the async_lines array
+    async_lines.push(labels["main"])
+    //loop through the program
+//constantly check if the length of async_lines is greater than 1, if it is, "zip" through the async_lines and evaluate them
+//if the length of async_lines is 1, continue evaluating the main program
     while (true) {
-        //evaluate the current line
-        let res = evaluateLine(program[currentLine]);
-        if (res == undefined) {
-            //pass
-        } else returnStack.push(res);
-        if (res == "exit") {
-            break;
+        if(false) {}
+        else {
+            //if the length of async_lines is 1, continue evaluating the main program
+            let res = evaluateLine(program[currentLine]);
+            if (res == "label") {
+                currentLine++
+                continue;
+            }
+            if (currentLine >= program.length) {
+                currentLine++
+                break;
+            }
+            if (res == undefined) {
+                currentLine++
+                continue;
+            }
+            //push res to the return stack
+            returnStack.push(res);
+            currentLine++
         }
-        //increment the current line
-        currentLine++;
     }
 }
+
 //function to evaluate a string, integer, or identifier
 function evaluateArg(arg) {
     //if the arg is a string, return it
@@ -190,7 +213,7 @@ function evaluateCommand(command, args) {
     //check if command is in the commands dictionary
     //check if command is exit
     if (command == "exit") {
-        return "exit";
+        process.exit();
     }
     //check if command is whitespace or a comment
     if (command.trim() == "" || command == "comment") {
@@ -226,9 +249,12 @@ specialForms.print = function(args) {
     return undefined;
 }
 specialForms.in = function(args) {
-    //get input from the user
-    var input = prompt("")
+    //get input from the use
+    if (args[1]) p = evaluateArg(args[1])
+    else p = ""
+    var input = prompt(p)
     //set the variable to the input
+    if (!args[0]) return input
     stack[args[0].value] = input;
     return input;
 }
@@ -243,12 +269,19 @@ specialForms.int = function(args) {
     }
     return parseFloat(prompt(""))
 }
-specialForms.set = function(args) {
+specialForms.mov = function(args) {
     //set the value of the variable to the value
     m = args[0].value;
-    value = evaluateArg(args[1]);
+    if (!args[1]) value = returnStack[returnStack.length - 1]
+    else value = evaluateArg(args[1]);
     stack[m] = value;
-    return value;
+}
+functions.async = (args) => {
+    //with the givem number, create a new async thread at line n
+    n = args[0]
+    async_lines.push(n)
+    thread++;
+    return undefined;
 }
 specialForms.goto = function(args) {
     //set the current line to the line of the label
@@ -262,13 +295,19 @@ specialForms.gosub = (args) => {
     currentLine = labels[togo]
 }
 functions.return = function() {
+    if (async_lines.length > 1) {
+        async_lines.splice(thread, 1)
+    }
     if (goStack.length == 0) {
         return kill(error("Nowhere to return to", "OrphanedReturn", currentLine, "return", "return", "This label is to be gosubbed"))
     }
     currentLine = goStack[goStack.length - 1]
     goStack.pop(goStack.length -1)
 }
-
+functions.clcc = function() {
+    console.log(`thread: ${thread}`)
+    async_lines.splice(thread, 1)
+}
 specialForms.goto_if = function(args) {
     //if the most recent return value is true, set the current line to the line of the label
     if (returnStack[returnStack.length - 1] == true) {
@@ -437,7 +476,19 @@ functions.gt = function(args) {
 functions.drop = function(args) {
     //pop the provided variable off the stack
     n = args[0].value;
-    delete stack[n];
+    stack[n] = undefined
+}
+specialForms.pop = function(args) {
+    if (args.length == 0) {
+        returnStack.pop();
+        return
+    }
+    if (!args[0].type == "ident") {
+        error("Identifier not provided", "TypeError", currentLine, program[currentLine], null, "Provide a variable s an argument")
+        return
+    }
+    stack[args[0].value]=returnStack.pop()
+    return
 }
 specialForms.call = function(args) {
     //call the provided function
