@@ -3,9 +3,17 @@ const summary = require("./error.js").summary;
 function scanProgram(program) {
     types = "error";
     //check first line, if it starts with #allow, then allow the program to run without checking for errors
-    if (program.startsWith("#allow")) {
+    if (program.startsWith("#allow\n#inf")) {
         types = "warn"
+        inf = true
     }
+    else if (program.startsWith("#inf")) {
+        inf = true
+    }
+    else if (program.startsWith("#allow")) {
+        types = "warn"
+        inf = false
+    } else inf = false
     error_count = 0;
     errors = [];
     //split the program into lines
@@ -21,7 +29,7 @@ function scanProgram(program) {
         l += 1;
         line = program[i].trim();
         //if the line defines a variable, through set or in
-        if (line.trim().startsWith("set") || line.trim().startsWith("in")) {
+        if (line.trim().startsWith("set")) {
             //get the variable name
             var variableName = line.split(" ")[1];
             value = line.split(" ")[2];
@@ -76,6 +84,22 @@ function scanProgram(program) {
                 errors.push(`NoStar: ${labelName}`)
             }
         }
+        //if the line is a call to a label, add it to the used labels list
+        else if (line.trim().startsWith("gosub_if")) {
+            //split the by goto, then by spaces, remove empty strings, and get the label name
+            labelName = line.split("gosub_if")[1].trim()
+            //check if the label is prefixed with a *
+            if (labelName.startsWith("*")) {
+                labelName = labelName.split("*")[1].trim();
+                gotos[labelName] = l;
+                usedLabels[labelName] = true;
+            } else {
+                error("Label " + labelName + " is referenced without a *", "SyntaxError", l - 1, null, null, hint = "Add a * before the label name", hint_quote = "gosub_if *" + labelName);
+                error_count += 1;
+                error_throw = true;
+                errors.push(`NoStar: ${labelName}`)
+            }
+        }
         else if (line.trim().startsWith("gosub")) {
              //split the by goto, then by spaces, remove empty strings, and get the label name
             labelName = line.split("gosub")[1].trim()
@@ -90,7 +114,7 @@ function scanProgram(program) {
                 error_throw = true;
                 errors.push(`NoStar: ${labelName}`)
             }
-        } 
+        }
         //if the line is a call to a label, add it to the used labels list
         else if (line.trim().startsWith("goto")) {
             //split the by goto, then by spaces, remove empty strings, and get the label name
@@ -155,7 +179,7 @@ function scanProgram(program) {
         error_throw = true;
         errors.push(`NoMain: main`)
     }
-    if (exit != true) {
+    if (exit != true && inf != true) {
         error("No exit statement found", "NameError", 0, null, null, hint = "Add an exit statement to your program", hint_quote = "exit");
         error_throw = true;
         error_count += 1;
