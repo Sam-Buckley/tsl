@@ -1,26 +1,3 @@
-:fib
-    set t @r
-    cmp rdi undefined
-    goto_if *fib_def_rdi
-    cmp t 0
-    goto_if *fib_zero
-    cmp t 1
-    goto_if *fib_one
-    sub t 1
-    set temp_1
-    add
-    :fib_zero
-        push 0
-        return
-    :fib_one
-        push 1
-        return
-    :fib_def_rdi
-        set rdi 0
-        goto *fib
-
 :main
-    push 10
-    gosub *fib
-    out @r
+    out "hello world!"
     exit

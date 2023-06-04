@@ -28,6 +28,7 @@ function scanProgram(program) {
     for (i in program) {
         l += 1;
         line = program[i].trim();
+<<<<<<< HEAD
         //if the line defines a variable, through set or in
         if (line.trim().startsWith("set")) {
             //get the variable name
@@ -49,6 +50,8 @@ function scanProgram(program) {
             //add the variable to the variables list
             variables[variableName] = {line: l, value: value};
         }
+=======
+>>>>>>> 1f06526c6dc534d94ec4b6791f1a4697fe8003a8
         //if the line is a label, add it to the labels dictionary
         if (line.trim().startsWith(":")) {
             //get the label name
